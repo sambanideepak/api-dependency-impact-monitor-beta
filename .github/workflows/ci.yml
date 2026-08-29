@@ -6,17 +6,25 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege: read-only contents, no write tokens, no secrets.
+permissions:
+  contents: read
+
 jobs:
   test-and-scan:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install only dependency (PyYAML, MIT)
         run: pip install pyyaml pytest

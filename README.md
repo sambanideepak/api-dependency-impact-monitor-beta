@@ -1,4 +1,4 @@
-# UpstreamSentry — Public Beta
+# UpstreamSentry
 
 > **Know what breaks before the API change reaches you.**
 
