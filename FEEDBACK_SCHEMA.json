@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "beta": "api-dependency-impact-monitor-human-beta",
+  "_note": "All fields optional except tester_id. Ranges only for willingness-to-pay; no exact prices collected. No source code is uploaded; this is the only data we receive.",
+  "tester_id": "",
+  "timestamp": "",
+  "about": {
+    "role": "",
+    "tested_client": "",
+    "tested_api": ""
+  },
+  "setup_and_run": {
+    "setup_difficulty_1_5": null,
+    "scan_completed": "",
+    "setup_blocker": ""
+  },
+  "results": {
+    "useful_impacts_count": null,
+    "useful_impacts_examples": [],
+    "false_positives_count": null,
+    "false_positives_examples": [],
+    "missed_impacts_count": null,
+    "missed_impacts_examples": [],
+    "report_clarity_1_5": null,
+    "understood_why_flagged": ""
+  },
+  "value": {
+    "time_saved_minutes": null,
+    "would_use_again": "",
+    "problem_frequency": "",
+    "current_workaround": ""
+  },
+  "product": {
+    "biggest_missing_feature": "",
+    "wtp_range": "",
+    "wtp_model": "",
+    "wtp_objection": ""
+  },
+  "permission": {
+    "quote_allowed": "",
+    "followup_allowed": ""
+  },
+  "free_text": ""
+}

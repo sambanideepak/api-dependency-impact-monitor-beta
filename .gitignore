@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+beta-report/
+demo-output/
+.impact_tmp/
+*.pytest_cache/
+.DS_Store
