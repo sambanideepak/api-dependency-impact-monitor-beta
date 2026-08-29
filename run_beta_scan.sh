@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Human-beta one-command runner for API Dependency Impact Monitor.
+# Human-beta one-command runner for UpstreamSentry.
 #
 # Usage:
 #   bash human-beta/run_beta_scan.sh \

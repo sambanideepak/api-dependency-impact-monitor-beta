@@ -2104,12 +2104,13 @@ def main():
         api_diff_path = Path(args[1]).expanduser()
         openapi_spec_path = Path(args[2]).expanduser()
         out_json = Path(args[3]).expanduser() if len(args) >= 4 else \
-            Path("~/Projects/api-dependency-impact-monitor/artifacts/impact-report-v2.json").expanduser()
+            Path("./impact-report-v2.json").expanduser()
     else:
-        repo_path = Path("~/Projects/api-dependency-impact-monitor/demo-app").expanduser()
-        api_diff_path = Path("~/Projects/api-dependency-impact-monitor/artifacts/api-diff.json").expanduser()
-        openapi_spec_path = Path("~/Projects/api-dependency-impact-monitor/demo-api/openapi-old.yaml").expanduser()
-        out_json = Path("~/Projects/api-dependency-impact-monitor/artifacts/impact-report-v2.json").expanduser()
+        # No args: this module is normally driven by `github_mvp.cli`; this fallback
+        # only documents the expected inputs. It does NOT hardcode any local path.
+        print("Usage: python -m github_mvp.cli scan --repo <path> "
+              "--old-spec <old.yaml> --new-spec <new.yaml> --output <dir>")
+        sys.exit(2)
 
     # Exclude test files for production analysis
     mapper = SemanticImpactMapper(

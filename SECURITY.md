@@ -1,4 +1,4 @@
-# Security for Testers — API Dependency Impact Monitor (beta)
+# Security for Testers — UpstreamSentry (beta)
 
 **Short version:** local, static, read-only. No code execution of your repo, no network egress,
 no writes into your repo, no credentials.

@@ -1,7 +1,9 @@
-# API Dependency Impact Monitor — Public Beta
+# UpstreamSentry — Public Beta
 
-**Read-only, local, Python-first scanner that tells you which parts of *your* Python API
-client break when a third-party REST/OpenAPI API changes.**
+> **Know what breaks before the API change reaches you.**
+
+Read-only, local, Python-first scanner that tells you which parts of *your* Python API
+client break when a third-party REST/OpenAPI API changes.
 
 You point it at a Python repo (the client you depend on) plus the **old** and **new** OpenAPI
 specs of the API it calls. It statically analyzes your code (no execution, no network, no upload)
@@ -52,8 +54,8 @@ Full detail: [PRIVACY.md](PRIVACY.md) · [SECURITY.md](SECURITY.md)
 
 ```bash
 # 1. Clone this repo (or download as ZIP) and cd in
-git clone https://github.com/sambanideepak/api-dependency-impact-monitor-beta.git
-cd api-dependency-impact-monitor-beta
+git clone https://github.com/sambanideepak/upstream-sentry.git
+cd upstream-sentry
 
 # 2. Create an isolated env + install the ONLY dependency (PyYAML, MIT, free)
 python3 -m venv .venv
@@ -141,7 +143,7 @@ Full list: [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)
 ## Repository layout
 
 ```
-api-dependency-impact-monitor-beta/
+upstream-sentry/
 ├── semantic_impact_mapper.py      # core static impact mapper
 ├── github_mvp/                    # CLI + pipeline + spec diff + safe clone
 ├── demo-app/                      # self-contained example Python client

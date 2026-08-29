@@ -1,0 +1,53 @@
+name: UpstreamSentry CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install only dependency (PyYAML, MIT)
+        run: pip install pyyaml pytest
+
+      - name: Run unit tests (generic, no vendor source)
+        run: python -m pytest tests/ -q
+
+      - name: Run one-command beta scan on bundled demo (read-only safety)
+        run: |
+          bash run_beta_scan.sh \
+            --repo ./demo-app \
+            --old-spec ./demo-api/openapi-old.yaml \
+            --new-spec ./demo-api/openapi-new.yaml \
+            --output ./beta-report
+
+      - name: Assert read-only (demo repo must be unchanged)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from github_mvp.pipeline import fingerprint_repo, compare_fingerprints, ImpactPipeline
+          repo = Path('./demo-app').resolve()
+          before = fingerprint_repo(repo)
+          pipe = ImpactPipeline(repo, Path('./demo-api/openapi-old.yaml').resolve(), Path('./demo-api/openapi-new.yaml').resolve())
+          res = pipe.run()
+          after = fingerprint_repo(repo)
+          d = compare_fingerprints(before, after)
+          assert not d['changed'] and not d['added'] and not d['removed'], "repo mutated!"
+          assert res.safety.get('read_only'), "read_only False"
+          print("READ-ONLY SAFETY OK")
+          PY
+
+      - name: Assert no network/telemetry in analysis path
+        run: |
+          ! grep -rEn "requests\.|urllib\.request|httpx|socket\.connect|telemetry|beacon" github_mvp/ semantic_impact_mapper.py | grep -v "safe_clone" | grep -v "__pycache__"

@@ -1,4 +1,4 @@
-# Privacy for Testers — API Dependency Impact Monitor (beta)
+# Privacy for Testers — UpstreamSentry (beta)
 
 **Short version:** the tool runs on your machine, reads your code locally, changes nothing, and
 sends nothing anywhere. We never receive your source.

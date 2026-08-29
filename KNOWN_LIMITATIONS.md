@@ -1,4 +1,4 @@
-# Known Limitations — Human Beta (API Dependency Impact Monitor)
+# Known Limitations — Human Beta (UpstreamSentry)
 
 We'd rather you know the edges than be surprised. These are honest, current limits (2026-08-29).
 

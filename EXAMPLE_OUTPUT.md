@@ -1,6 +1,7 @@
 # Example Output (real tool output on the bundled `demo-app` + `demo-api` specs)
 
-This is the **actual** JSON+MD the tool produces. Nothing here is from a private repo.
+This is the **actual** JSON+MD the tool produces. Paths are shown relative (the tool reports
+whatever path you pass; no local machine info is embedded). Nothing here is from a private repo.
 
 ## Summary line (stdout)
 ```
@@ -13,9 +14,9 @@ Read-only safe:   YES (repo unchanged)
 ## `impact-report.json` shape
 ```json
 {
-  "repo_path": "/Users/deepaksambani/Projects/api-dependency-impact-monitor-beta/demo-app",
-  "old_spec": "/Users/deepaksambani/Projects/api-dependency-impact-monitor-beta/demo-api/openapi-old.yaml",
-  "new_spec": "/Users/deepaksambani/Projects/api-dependency-impact-monitor-beta/demo-api/openapi-new.yaml",
+  "repo_path": "./demo-app",
+  "old_spec": "./demo-api/openapi-old.yaml",
+  "new_spec": "./demo-api/openapi-new.yaml",
   "breaking_changes": [
     {
       "type": "endpoint_removed",
@@ -33,9 +34,9 @@ Read-only safe:   YES (repo unchanged)
       "schema_object": "Project",
       "direction": "response",
       "api_field": "owner_id"
-    },
-    {
-      "type": "r
+    }
+  ]
+}
 ```
 
 ## One real impact object (excerpt, from the demo)

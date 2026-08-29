@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "beta": "api-dependency-impact-monitor-human-beta",
+  "beta": "upstream-sentry-human-beta",
   "_note": "All fields optional except tester_id. Ranges only for willingness-to-pay; no exact prices collected. No source code is uploaded; this is the only data we receive.",
   "tester_id": "",
   "timestamp": "",
