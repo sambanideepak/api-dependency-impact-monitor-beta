@@ -440,13 +440,13 @@ class ClientMethodMapper:
     def _classify_request_call(self, stmt: ast.Call) -> "Optional[Tuple[str, str]]":
         """Return (http_method, endpoint_or_varname) for a requester call, else None.
 
-        Recognizes:
+        Recognizes client-style call shapes such as:
           self._adapter.get(url=VAR)            -> (GET, VAR)
           self._adapter.get(url="/literal")     -> (GET, /literal)
           requester.requestJsonAndCheck("GET", VAR) -> (GET, VAR)
           self._request("GET", VAR)             -> (GET, VAR)
-          session.get(VAR) / requests.get(VAR)  -> (GET, VAR)
           client.post(url=VAR)                  -> (POST, VAR)
+        (Static pattern match only; no network calls are made here.)
         """
         fn = stmt.func
         # Attribute form: obj.get(...) / obj.post(...)
