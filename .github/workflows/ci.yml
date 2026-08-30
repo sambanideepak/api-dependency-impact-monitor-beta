@@ -108,3 +108,69 @@ jobs:
           assert 'no baseline consumer impacts' in notes
           print('REAL-WORLD FAIL-CLOSED PROOF OK: REVIEW, NO FALSE PASS')
           PY
+
+  real-world-supported-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout UpstreamSentry
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependency
+        run: pip install pyyaml
+
+      - name: Materialize frozen hvac BEFORE and AFTER revisions
+        run: |
+          git clone --quiet https://github.com/hvac/hvac.git /tmp/hvac-before
+          git -C /tmp/hvac-before checkout --quiet 97052b593fbeae4f4556789b03933d7a5be273df
+          git clone --quiet https://github.com/hvac/hvac.git /tmp/hvac-after
+          git -C /tmp/hvac-after checkout --quiet 7a06e627795dc4121eaaf0b1b75b517be8cdecfe
+
+      - name: Prove stale migration is rejected
+        run: |
+          set +e
+          python run_migration_audit.py \
+            --before-repo /tmp/hvac-before \
+            --after-repo /tmp/hvac-before \
+            --old-spec real_world_cases/hvac_approle_secret_id/openapi-old.yaml \
+            --new-spec real_world_cases/hvac_approle_secret_id/openapi-new.yaml \
+            --output /tmp/hvac-stale-audit
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+
+      - name: Prove completed migration passes
+        run: |
+          python run_migration_audit.py \
+            --before-repo /tmp/hvac-before \
+            --after-repo /tmp/hvac-after \
+            --old-spec real_world_cases/hvac_approle_secret_id/openapi-old.yaml \
+            --new-spec real_world_cases/hvac_approle_secret_id/openapi-new.yaml \
+            --output /tmp/hvac-migrated-audit
+
+      - name: Assert real supported FAIL and PASS evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          stale = json.loads(Path('/tmp/hvac-stale-audit/migration-audit.json').read_text())
+          migrated = json.loads(Path('/tmp/hvac-migrated-audit/migration-audit.json').read_text())
+
+          assert stale['decision'] == 'FAIL', stale['decision']
+          assert migrated['decision'] == 'PASS', migrated['decision']
+          assert len(stale['before_scan']['impacts']) >= 1, 'real baseline impact was not detected'
+          assert len(migrated['before_scan']['impacts']) >= 1, 'real baseline impact was not detected'
+          assert len(migrated['after_scan']['impacts']) == 0, 'old endpoint impact remained after real migration'
+          assert all(d['status'] == 'STILL_PRESENT' for d in stale['dispositions'])
+          assert all(d['status'] == 'RESOLVED' for d in migrated['dispositions'])
+          assert stale['before_scan']['safety']['read_only'] is True
+          assert stale['after_scan']['safety']['read_only'] is True
+          assert migrated['before_scan']['safety']['read_only'] is True
+          assert migrated['after_scan']['safety']['read_only'] is True
+          print('REAL-WORLD SUPPORTED MIGRATION PROOF OK: STALE=FAIL, MIGRATED=PASS')
+          PY
