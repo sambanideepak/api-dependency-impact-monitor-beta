@@ -1,0 +1,23 @@
+openapi: 3.0.0
+info:
+  title: Frozen Vault AppRole secret-id migration slice
+  version: new
+paths:
+  /v1/auth/approle/role/{role_name}/secret-id/lookup:
+    post:
+      parameters:
+        - in: path
+          name: role_name
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Secret ID metadata}
+  /v1/auth/approle/role/{role_name}/secret-id/destroy:
+    post:
+      parameters:
+        - in: path
+          name: role_name
+          required: true
+          schema: {type: string}
+      responses:
+        '204': {description: Secret ID destroyed}
