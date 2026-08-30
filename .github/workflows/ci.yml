@@ -59,3 +59,118 @@ jobs:
       - name: Assert no network/telemetry in analysis path
         run: |
           ! grep -rEn "requests\.|urllib\.request|httpx|socket\.connect|telemetry|beacon" github_mvp/ semantic_impact_mapper.py | grep -v "safe_clone" | grep -v "__pycache__"
+
+  real-world-fail-closed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout UpstreamSentry
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependency
+        run: pip install pyyaml
+
+      - name: Materialize frozen EvalView BEFORE and AFTER revisions
+        run: |
+          git clone --quiet https://github.com/hidai25/eval-view.git /tmp/eval-view-before
+          git -C /tmp/eval-view-before checkout --quiet afbc7f6c715d7cd1ab1ea71aefd5e26a9bbcd767
+          git clone --quiet https://github.com/hidai25/eval-view.git /tmp/eval-view-after
+          git -C /tmp/eval-view-after checkout --quiet 27f7bc019cd3d41184411fc3802494f97a0c58e7
+
+      - name: Run real-world fail-closed audit
+        run: |
+          python run_migration_audit.py \
+            --before-repo /tmp/eval-view-before \
+            --after-repo /tmp/eval-view-after \
+            --old-spec real_world_cases/eval_view_openai_assistants/openapi-old.yaml \
+            --new-spec real_world_cases/eval_view_openai_assistants/openapi-new.yaml \
+            --output /tmp/eval-view-audit
+
+      - name: Assert honest REVIEW coverage-boundary decision
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/eval-view-audit/migration-audit.json').read_text())
+          assert payload['decision'] == 'REVIEW', payload['decision']
+          before = payload['before_scan']
+          after = payload['after_scan']
+          assert len(before['breaking_changes']) > 0, 'fixture did not produce a breaking contract change'
+          assert len(before['impacts']) == 0, 'SDK-symbol migration unexpectedly mapped; re-evaluate expected case'
+          assert before['safety']['read_only'] is True
+          assert after['safety']['read_only'] is True
+          notes = ' '.join(payload.get('notes', [])).lower()
+          assert 'no baseline consumer impacts' in notes
+          print('REAL-WORLD FAIL-CLOSED PROOF OK: REVIEW, NO FALSE PASS')
+          PY
+
+  real-world-supported-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout UpstreamSentry
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependency
+        run: pip install pyyaml
+
+      - name: Materialize frozen hvac BEFORE and AFTER revisions
+        run: |
+          git clone --quiet https://github.com/hvac/hvac.git /tmp/hvac-before
+          git -C /tmp/hvac-before checkout --quiet 97052b593fbeae4f4556789b03933d7a5be273df
+          git clone --quiet https://github.com/hvac/hvac.git /tmp/hvac-after
+          git -C /tmp/hvac-after checkout --quiet 7a06e627795dc4121eaaf0b1b75b517be8cdecfe
+
+      - name: Prove stale migration is rejected
+        run: |
+          set +e
+          python run_migration_audit.py \
+            --before-repo /tmp/hvac-before \
+            --after-repo /tmp/hvac-before \
+            --old-spec real_world_cases/hvac_approle_secret_id/openapi-old.yaml \
+            --new-spec real_world_cases/hvac_approle_secret_id/openapi-new.yaml \
+            --output /tmp/hvac-stale-audit
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+
+      - name: Prove completed migration passes
+        run: |
+          python run_migration_audit.py \
+            --before-repo /tmp/hvac-before \
+            --after-repo /tmp/hvac-after \
+            --old-spec real_world_cases/hvac_approle_secret_id/openapi-old.yaml \
+            --new-spec real_world_cases/hvac_approle_secret_id/openapi-new.yaml \
+            --output /tmp/hvac-migrated-audit
+
+      - name: Assert real supported FAIL and PASS evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          stale = json.loads(Path('/tmp/hvac-stale-audit/migration-audit.json').read_text())
+          migrated = json.loads(Path('/tmp/hvac-migrated-audit/migration-audit.json').read_text())
+
+          assert stale['decision'] == 'FAIL', stale['decision']
+          assert migrated['decision'] == 'PASS', migrated['decision']
+          assert len(stale['before_scan']['impacts']) >= 1, 'real baseline impact was not detected'
+          assert len(migrated['before_scan']['impacts']) >= 1, 'real baseline impact was not detected'
+          assert len(migrated['after_scan']['impacts']) == 0, 'old endpoint impact remained after real migration'
+          assert all(d['status'] == 'STILL_PRESENT' for d in stale['dispositions'])
+          assert all(d['status'] == 'RESOLVED' for d in migrated['dispositions'])
+          assert stale['before_scan']['safety']['read_only'] is True
+          assert stale['after_scan']['safety']['read_only'] is True
+          assert migrated['before_scan']['safety']['read_only'] is True
+          assert migrated['after_scan']['safety']['read_only'] is True
+          print('REAL-WORLD SUPPORTED MIGRATION PROOF OK: STALE=FAIL, MIGRATED=PASS')
+          PY
