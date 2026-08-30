@@ -1,5 +1,7 @@
 # UpstreamSentry
 
+![CI](https://github.com/sambanideepak/upstream-sentry/actions/workflows/ci.yml/badge.svg)
+
 > **Know what breaks before the API change reaches you.**
 
 Read-only, local, Python-first scanner that tells you which parts of *your* Python API
