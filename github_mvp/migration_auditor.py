@@ -14,6 +14,7 @@ code, and does NOT claim behavioral proof when static analysis cannot prove it.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from pathlib import Path
@@ -35,9 +36,6 @@ class AuditDecision(str, Enum):
     REVIEW = "REVIEW"
 
 
-# These changes can be accepted from static absence alone in V1 because the
-# old usage itself is what must disappear. Other migrations may require proof
-# of replacement semantics, type behavior, payload construction, or enum use.
 STATICALLY_PROVABLE_TYPES = {
     "field_removed",
     "endpoint_removed",
@@ -177,8 +175,6 @@ class MigrationAuditor:
                 )
             )
 
-        # If the API diff is breaking but the baseline scanner found no consumer
-        # impacts, V1 refuses to claim that a migration was successfully audited.
         if before.breaking_changes and not before.impacts:
             result.notes.append(
                 "Breaking API changes exist, but no baseline consumer impacts were found. "
@@ -200,3 +196,55 @@ class MigrationAuditor:
             result.decision = AuditDecision.REVIEW
 
         return result
+
+
+def write_audit_reports(result: MigrationAuditResult, out_dir: Path) -> Dict[str, Path]:
+    """Write deterministic machine + human evidence reports outside target repos."""
+    out_dir = Path(out_dir).expanduser().resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    json_path = out_dir / "migration-audit.json"
+    md_path = out_dir / "migration-audit.md"
+    payload = result.to_dict()
+    json_path.write_text(json.dumps(payload, indent=2) + "\n")
+
+    lines = [
+        "# UpstreamSentry Migration Audit",
+        "",
+        f"**Decision:** `{result.decision.value}`",
+        f"**Before repository:** `{result.before_repo}`",
+        f"**After repository:** `{result.after_repo}`",
+        f"**Old API spec:** `{result.old_spec}`",
+        f"**New API spec:** `{result.new_spec}`",
+        "",
+        "## Evidence boundary",
+        "",
+        "This report is an independent deterministic static audit. V1 does not run arbitrary target code and does not claim behavioral proof when static evidence is insufficient.",
+        "",
+    ]
+
+    if result.error:
+        lines += ["## Error", "", result.error, ""]
+
+    lines += ["## Baseline impact dispositions", ""]
+    if not result.dispositions:
+        lines.append("No baseline impacts were dispositioned.")
+    for i, d in enumerate(result.dispositions, 1):
+        lines += [
+            f"### {i}. {d.breaking_change_id} — {d.status.value}",
+            f"- Change type: `{d.breaking_change_type}`",
+            f"- API path: `{d.api_path}`",
+            f"- API field: `{d.api_field}`",
+            f"- Before location: `{d.before_file}:{d.before_line}` ({d.before_symbol})",
+            f"- Reason: {d.reason}",
+            f"- Post-migration matches: {len(d.after_matches)}",
+            "",
+        ]
+
+    if result.notes:
+        lines += ["## Notes", ""]
+        lines.extend(f"- {note}" for note in result.notes)
+        lines.append("")
+
+    md_path.write_text("\n".join(lines) + "\n")
+    return {"json": json_path, "md": md_path}
